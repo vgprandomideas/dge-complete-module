@@ -1,0 +1,46 @@
+[
+    {
+        "item_name": "industrial goods",
+        "hs_code": "777",
+        "quantity": 5,
+        "port": "Mangalore",
+        "reason": "Damage",
+        "category": "Machinery",
+        "original_price": 50000.0,
+        "valuation_percent": 45,
+        "valued_price": 22500.0,
+        "services": {
+            "inspection": {
+                "inspector_id": "007",
+                "inspection_notes": "partially damaged"
+            },
+            "certification": {
+                "cert_type": "iso 9008",
+                "cert_verified": true
+            },
+            "buyer_swap": {
+                "alternative_buyer": "gps",
+                "contact": "9090909090"
+            },
+            "warehousing": {
+                "warehouse_location": "mangalore",
+                "duration_days": 20
+            },
+            "packaging": {
+                "package_type": "Crate",
+                "special_handling": false
+            },
+            "trucking": {
+                "pickup_location": "mangalore",
+                "drop_location": "chennai",
+                "transporter_name": "GP Logisitics"
+            },
+            "scf": {
+                "scf_requested": 13500.0,
+                "scf_interest_rate": 12.0,
+                "scf_days": 30,
+                "scf_total_interest": 133.15068493150685
+            }
+        }
+    }
+]
