@@ -1,4 +1,4 @@
-# 📦 DGE Full App with Modular Ancillary Services & SCF
+# DGE Full App with Modular Ancillary Services & SCF
 Complete DGE Module/
 ├── DGE_Full_App_with_Modular_Ancillary.py   ✅ <– This is your main file
 ├── dge_goods_data.json                      ✅ <– For storing data
