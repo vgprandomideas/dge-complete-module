@@ -1,0 +1,25 @@
+# Python bytecode
+__pycache__/
+*.py[cod]
+
+# Virtual environments
+env/
+venv/
+.venv/
+
+# VSCode settings
+.vscode/
+
+# Streamlit temp/config files
+.streamlit/
+
+# Uploaded files
+uploads/
+
+# Log and temp files
+*.log
+*.tmp
+
+# macOS/Windows/Linux system files
+.DS_Store
+Thumbs.db
