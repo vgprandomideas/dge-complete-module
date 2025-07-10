@@ -1,10 +1,6 @@
-# DGE Full App with Modular Ancillary Services & SCF
-Complete DGE Module/
-├── DGE_Full_App_with_Modular_Ancillary.py   ✅ <– This is your main file
-├── dge_goods_data.json                      ✅ <– For storing data
-├── uploads/                                 ✅ <– For uploaded item files
-├── requirements.txt                         ✅ <– For dependencies
+import os
 
+# DGE Full App with Modular Ancillary Services & SCF
 
 import streamlit as st
 import json
