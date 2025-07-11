@@ -12,9 +12,11 @@ def load_data():
         try:
             with open(DATA_FILE, "r") as f:
                 data = json.load(f)
+                # Filter out any invalid records and fix data types
                 valid_data = []
                 for record in data:
                     if isinstance(record, dict) and 'Item Name' in record and 'Port' in record:
+                        # Fix numpy boolean values
                         if 'Needs SCF' in record:
                             if isinstance(record['Needs SCF'], str):
                                 record['Needs SCF'] = record['Needs SCF'].lower() in ['true', 'np.true_', '1']
@@ -29,6 +31,7 @@ def load_data():
 
 def save_data(data):
     try:
+        # Convert numpy types to native Python types before saving
         clean_data = []
         for record in data:
             clean_record = {}
@@ -40,6 +43,7 @@ def save_data(data):
                 elif isinstance(value, (np.float_, np.floating)):
                     clean_record[key] = float(value)
                 elif isinstance(value, dict):
+                    # Handle nested dictionaries
                     clean_dict = {}
                     for k, v in value.items():
                         if isinstance(v, (np.bool_, np.generic)):
@@ -61,9 +65,11 @@ def save_data(data):
         st.error(f"Error saving data: {e}")
 
 def generate_unique_id():
+    """Generate a unique ID for each record"""
     return f"DGE-{datetime.now().strftime('%Y%m%d%H%M%S')}"
 
 def calculate_scf_metrics(data):
+    """Calculate SCF investment metrics"""
     scf_items = [d for d in data if d.get("Needs SCF") and d.get("SCF Details", {}).get("Requested", 0) > 0]
     
     if not scf_items:
@@ -80,6 +86,7 @@ def calculate_scf_metrics(data):
         "avg_duration": avg_duration
     }
 
+# Enhanced category valuations with more categories
 CATEGORY_VALUATION = {
     "Electronics": 50, "Automobile": 55, "Textiles": 40, "Furniture": 60, "Machinery": 45,
     "Plastic Goods": 35, "Chemicals": 30, "Food & Beverage": 25, "Metals": 50, "Paper": 30,
@@ -92,6 +99,7 @@ ANCILLARY_OPTIONS = [
     "Warehousing", "Packaging", "Trucking", "Insurance", "Legal Documentation"
 ]
 
+# Port options for better data consistency
 PORT_OPTIONS = [
     "Mumbai", "Chennai", "Kolkata", "Kandla", "Cochin", "Visakhapatnam", 
     "Paradip", "Tuticorin", "Mangalore", "Jawaharlal Nehru Port", "Other"
@@ -115,9 +123,11 @@ section = st.sidebar.radio(
     label_visibility="collapsed"
 )
 
+# === GOODS INTAKE & SUPPLY CHAIN LOGISTICS ===
 if section == "Goods Intake & Logistics":
     st.title("📦 Goods Intake & Supply Chain Logistics")
     
+    # Add summary statistics at the top
     col1, col2, col3, col4 = st.columns(4)
     with col1:
         st.metric("Total Items Registered", len(data))
@@ -134,6 +144,7 @@ if section == "Goods Intake & Logistics":
     st.header("📋 New Goods Registration")
     
     with st.form("goods_intake_form", clear_on_submit=False):
+        # Basic Information
         st.subheader("1️⃣ Item Information")
         col1, col2 = st.columns(2)
         
@@ -151,6 +162,7 @@ if section == "Goods Intake & Logistics":
             rejection_date = st.date_input("Rejection Date", datetime.now())
             urgency = st.selectbox("Urgency Level", ["Low", "Medium", "High", "Critical"])
         
+        # Valuation Section
         st.subheader("💰 Valuation")
         col1, col2 = st.columns(2)
         
@@ -167,6 +179,7 @@ if section == "Goods Intake & Logistics":
             st.metric("Valued Price", f"${valued_price:,.2f}")
             uploaded_file = st.file_uploader("Upload goods photo or document", type=["jpg", "jpeg", "png", "pdf"])
 
+        # Supply Chain & Logistics Services Section
         st.subheader("2️⃣ Supply Chain & Logistics Services")
         ancillary_selected = st.multiselect("Select required services", ANCILLARY_OPTIONS)
         ancillary_details = {}
@@ -174,30 +187,57 @@ if section == "Goods Intake & Logistics":
         if ancillary_selected:
             for service in ancillary_selected:
                 with st.expander(f"📋 {service} Details"):
-                    if service == "Warehousing":
-                        ancillary_details[service] = {
-                            "Location": st.text_input("Warehouse Location", key=f"wh_loc"),
-                            "Duration": st.number_input("Storage Days", min_value=1, value=10, key=f"wh_days"),
-                            "Cost": st.number_input("Storage Cost per Day (USD)", min_value=0.0, value=10.0, key=f"wh_cost")
+                    if service == "Inspection":
+                        ancillary_details["Inspection"] = {
+                            "Inspector ID": st.text_input("Inspector ID", key="insp_id"),
+                            "Inspection Type": st.selectbox("Inspection Type", ["Visual", "Technical", "Quality", "Compliance"], key="insp_type"),
+                            "Inspection Notes": st.text_area("Inspection Notes", key="insp_notes"),
+                            "Estimated Cost": st.number_input("Estimated Cost (USD)", min_value=0.0, value=100.0, key="insp_cost")
+                        }
+                    elif service == "Certification Verification":
+                        ancillary_details["Certification Verification"] = {
+                            "Certification Type": st.text_input("Certification Type (ISO, BIS, etc.)", key="cert_type"),
+                            "Certification Authority": st.text_input("Certification Authority", key="cert_auth"),
+                            "Verified": st.selectbox("Verification Status", ["Pending", "Verified", "Failed"], key="cert_status")
+                        }
+                    elif service == "Buyer Swap Discovery":
+                        ancillary_details["Buyer Swap Discovery"] = {
+                            "Alternative Buyer": st.text_input("Alternative Buyer Name", key="buyer_name"),
+                            "Contact Info": st.text_input("Contact Info", key="buyer_contact"),
+                            "Negotiated Price": st.number_input("Negotiated Price (USD)", min_value=0.0, key="buyer_price")
+                        }
+                    elif service == "Warehousing":
+                        ancillary_details["Warehousing"] = {
+                            "Warehouse Location": st.text_input("Warehouse Location", key="warehouse_loc"),
+                            "Storage Duration (days)": st.number_input("Storage Duration (days)", min_value=1, value=10, key="warehouse_days"),
+                            "Storage Cost per Day": st.number_input("Storage Cost per Day (USD)", min_value=0.0, value=10.0, key="warehouse_cost")
+                        }
+                    elif service == "Packaging":
+                        ancillary_details["Packaging"] = {
+                            "Package Type": st.selectbox("Type of Packaging", ["Box", "Crate", "Pallet", "Custom"], key="pack_type"),
+                            "Special Handling": st.checkbox("Special Handling Required?", key="pack_special"),
+                            "Packaging Cost": st.number_input("Packaging Cost (USD)", min_value=0.0, value=50.0, key="pack_cost")
                         }
                     elif service == "Trucking":
-                        ancillary_details[service] = {
-                            "Pickup": st.text_input("Pickup Location", key=f"tr_pickup"),
-                            "Drop": st.text_input("Drop Location", key=f"tr_drop"),
-                            "Cost": st.number_input("Transport Cost (USD)", min_value=0.0, value=200.0, key=f"tr_cost")
+                        ancillary_details["Trucking"] = {
+                            "Pickup Location": st.text_input("Pickup Location", key="truck_pickup"),
+                            "Drop Location": st.text_input("Drop Location", key="truck_drop"),
+                            "Transporter": st.text_input("Transporter Name", key="truck_name"),
+                            "Transport Cost": st.number_input("Transport Cost (USD)", min_value=0.0, value=200.0, key="truck_cost")
                         }
                     elif service == "Insurance":
-                        ancillary_details[service] = {
-                            "Type": st.selectbox("Insurance Type", ["Transit", "Storage", "Comprehensive"], key=f"ins_type"),
-                            "Coverage": st.number_input("Coverage Amount (USD)", min_value=0.0, value=valued_price, key=f"ins_coverage"),
-                            "Premium": st.number_input("Premium (USD)", min_value=0.0, value=valued_price*0.02, key=f"ins_premium")
+                        ancillary_details["Insurance"] = {
+                            "Insurance Type": st.selectbox("Insurance Type", ["Transit", "Storage", "Comprehensive"], key="ins_type"),
+                            "Coverage Amount": st.number_input("Coverage Amount (USD)", min_value=0.0, value=valued_price, key="ins_coverage"),
+                            "Premium": st.number_input("Premium (USD)", min_value=0.0, value=valued_price*0.02, key="ins_premium")
                         }
-                    else:
-                        ancillary_details[service] = {
-                            "Details": st.text_area(f"{service} Details", key=f"details_{service}"),
-                            "Cost": st.number_input("Estimated Cost (USD)", min_value=0.0, value=100.0, key=f"cost_{service}")
+                    elif service == "Legal Documentation":
+                        ancillary_details["Legal Documentation"] = {
+                            "Document Type": st.multiselect("Document Type", ["Bill of Lading", "Commercial Invoice", "Packing List", "Certificate of Origin"], key="legal_docs"),
+                            "Legal Compliance": st.selectbox("Legal Compliance Status", ["Compliant", "Non-Compliant", "Under Review"], key="legal_compliance")
                         }
 
+        # SCF Section
         st.subheader("3️⃣ Supply Chain Finance Request")
         needs_scf = st.checkbox("Request Supply Chain Finance")
         scf_dict = {}
@@ -217,6 +257,7 @@ if section == "Goods Intake & Logistics":
                 st.metric("Estimated Interest", f"${scf_interest:,.2f}")
                 st.metric("Total Repayment", f"${scf_requested + scf_interest:,.2f}")
                 
+                # Risk assessment
                 risk_score = "Low" if scf_interest_rate < 15 else "Medium" if scf_interest_rate < 25 else "High"
                 st.metric("Risk Assessment", risk_score)
                 
@@ -229,9 +270,11 @@ if section == "Goods Intake & Logistics":
                 "Risk Score": risk_score
             }
 
+        # Submit button
         submitted = st.form_submit_button("🚀 Register Item", use_container_width=True)
         
         if submitted:
+            # Enhanced validation
             errors = []
             if not item_name:
                 errors.append("Item Name is required")
@@ -245,6 +288,7 @@ if section == "Goods Intake & Logistics":
             if errors:
                 st.error("Please fix the following errors:\n" + "\n".join(f"• {error}" for error in errors))
             else:
+                # Create record with enhanced fields
                 record = {
                     "ID": generate_unique_id(),
                     "Item Name": item_name,
@@ -277,6 +321,7 @@ if section == "Goods Intake & Logistics":
     st.header("📁 Registered Items")
     
     if data:
+        # Filter options
         col1, col2, col3 = st.columns(3)
         with col1:
             category_filter = st.selectbox("Filter by Category", ["All"] + list(CATEGORY_VALUATION.keys()))
@@ -285,6 +330,7 @@ if section == "Goods Intake & Logistics":
         with col3:
             scf_filter = st.selectbox("Filter by SCF Status", ["All", "SCF Requested", "No SCF"])
         
+        # Apply filters
         filtered_data = data
         if category_filter != "All":
             filtered_data = [d for d in filtered_data if d.get('Category') == category_filter]
@@ -295,6 +341,7 @@ if section == "Goods Intake & Logistics":
         elif scf_filter == "No SCF":
             filtered_data = [d for d in filtered_data if not d.get('Needs SCF')]
         
+        # Display filtered results
         if filtered_data:
             options = []
             for d in filtered_data:
@@ -312,6 +359,7 @@ if section == "Goods Intake & Logistics":
                 selected_index = options.index(selected)
                 rec = filtered_data[selected_index]
                 
+                # Enhanced display with tabs
                 tab1, tab2, tab3 = st.tabs(["📋 Item Details", "🚛 Supply Chain & Logistics", "💰 Finance"])
                 
                 with tab1:
@@ -368,6 +416,7 @@ if section == "Goods Intake & Logistics":
     else:
         st.info("No items registered yet.")
 
+# === SCF INVESTMENT OPPORTUNITIES ===
 elif section == "Investment Opportunities":
     st.title("💰 Supply Chain Finance Investment Portal")
     
@@ -378,6 +427,7 @@ elif section == "Investment Opportunities":
         st.warning("🚫 No investment opportunities currently available.")
         st.info("Please check back later for new opportunities.")
     else:
+        # Investment dashboard
         st.header("📊 Investment Overview")
         
         col1, col2, col3, col4 = st.columns(4)
@@ -392,6 +442,38 @@ elif section == "Investment Opportunities":
         with col4:
             st.metric("Average Duration", f"{metrics['avg_duration']:.0f} days")
         
+        # Analytics using built-in Streamlit charts
+        st.subheader("📈 Investment Analytics")
+        
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            # Investment by category
+            category_investments = {}
+            for item in scf_items:
+                category = item.get('Category', 'Unknown')
+                scf_amount = item.get('SCF Details', {}).get('Requested', 0)
+                if category in category_investments:
+                    category_investments[category] += scf_amount
+                else:
+                    category_investments[category] = scf_amount
+            
+            if category_investments:
+                st.write("**Investment Distribution by Category**")
+                category_df = pd.DataFrame(list(category_investments.items()), 
+                                         columns=['Category', 'Total Investment'])
+                st.bar_chart(category_df.set_index('Category'))
+        
+        with col2:
+            # Interest rate summary
+            interest_rates = [d.get('SCF Details', {}).get('Interest Rate (%)', 0) for d in scf_items]
+            if interest_rates:
+                st.write("**Interest Rate Analysis**")
+                st.metric("Minimum Rate", f"{min(interest_rates):.1f}%")
+                st.metric("Maximum Rate", f"{max(interest_rates):.1f}%")
+                st.metric("Average Rate", f"{sum(interest_rates)/len(interest_rates):.1f}%")
+        
+        # Investment filters
         st.subheader("🔍 Investment Filters")
         
         col1, col2, col3 = st.columns(3)
@@ -402,6 +484,7 @@ elif section == "Investment Opportunities":
         with col3:
             max_duration = st.slider("Maximum Duration (days)", 1, 180, 90, step=1)
         
+        # Apply filters
         filtered_scf = [
             d for d in scf_items
             if (d.get("SCF Details", {}).get("Requested", 0) >= min_amt and
@@ -439,6 +522,7 @@ elif section == "Investment Opportunities":
         else:
             st.info("🔍 No opportunities match your current criteria. Please adjust the filters above.")
 
+# === MANAGEMENT DASHBOARD ===
 elif section == "Management Dashboard":
     st.title("🛠️ Management Dashboard")
     
@@ -447,6 +531,7 @@ elif section == "Management Dashboard":
     if not data:
         st.info("📊 No data available. Please register some items first.")
     else:
+        # Admin metrics
         st.header("📈 Business Overview")
         
         col1, col2, col3, col4 = st.columns(4)
@@ -463,11 +548,14 @@ elif section == "Management Dashboard":
             pending_count = len([d for d in data if d.get("Status", "Pending") == "Pending"])
             st.metric("Pending Items", pending_count)
         
+        # Data table with search and filter
         st.header("📋 Records Management")
         
         try:
+            # Convert to DataFrame for better display
             df_data = pd.DataFrame(data)
             
+            # Search functionality
             search_term = st.text_input("🔍 Search records")
             
             if search_term:
@@ -478,7 +566,9 @@ elif section == "Management Dashboard":
             else:
                 filtered_df = df_data
             
+            # Display table
             if not filtered_df.empty:
+                # Select columns to display
                 display_columns = ['Item Name', 'Category', 'Port', 'Valued Price', 'Needs SCF', 'Status']
                 available_columns = [col for col in display_columns if col in filtered_df.columns]
                 
@@ -488,6 +578,7 @@ elif section == "Management Dashboard":
                     hide_index=True
                 )
                 
+                # Professional detailed view
                 st.subheader("📋 Record Details")
                 
                 selected_item = st.selectbox(
@@ -499,8 +590,10 @@ elif section == "Management Dashboard":
                 if selected_item is not None:
                     selected_record = filtered_df.iloc[selected_item]
                     
+                    # Professional display without JSON
                     st.write("---")
                     
+                    # Basic Information Section
                     st.subheader("📋 Item Information")
                     col1, col2, col3 = st.columns(3)
                     
@@ -528,10 +621,12 @@ elif section == "Management Dashboard":
                         scf_status = "Yes" if selected_record.get('Needs SCF', False) else "No"
                         st.write(f"• **SCF Required:** {scf_status}")
                     
+                    # Reason for rejection
                     if selected_record.get('Reason'):
                         st.subheader("📝 Rejection Details")
                         st.write(f"**Reason:** {selected_record.get('Reason')}")
                     
+                    # Services Section
                     if selected_record.get('Ancillary Services'):
                         st.subheader("🚛 Supply Chain & Logistics Services")
                         services = selected_record.get('Ancillary Services', {})
@@ -541,13 +636,14 @@ elif section == "Management Dashboard":
                                 with st.expander(f"📋 {service_name}"):
                                     if isinstance(service_details, dict):
                                         for key, value in service_details.items():
-                                            if value:
+                                            if value:  # Only show non-empty values
                                                 st.write(f"• **{key}:** {value}")
                                     else:
                                         st.write(f"• {service_details}")
                         else:
                             st.info("No specific service details available")
                     
+                    # SCF Details Section
                     if selected_record.get('Needs SCF') and selected_record.get('SCF Details'):
                         st.subheader("💰 Supply Chain Finance Details")
                         scf_details = selected_record.get('SCF Details', {})
@@ -557,6 +653,7 @@ elif section == "Management Dashboard":
                             
                             with col1:
                                 st.write("**Financing Terms:**")
+                                st.write(f"• **Amount Requested:** ${scf_details.get('Requested', 0):,.2f}")
                                 st.write(f"• **Interest Rate:** {scf_details.get('Interest Rate (%)', 0)}%")
                                 st.write(f"• **Duration:** {scf_details.get('Duration (days)', 0)} days")
                             
@@ -566,9 +663,11 @@ elif section == "Management Dashboard":
                                 st.write(f"• **Total Repayment:** ${scf_details.get('Total Repayment', 0):,.2f}")
                                 st.write(f"• **Risk Assessment:** {scf_details.get('Risk Score', 'N/A')}")
                     
+                    # File information
                     if selected_record.get('File'):
                         st.subheader("📎 Attachments")
                         st.write(f"• **File:** {selected_record.get('File')}")
+                    
             else:
                 st.info("No records match your search criteria.")
                 
@@ -576,6 +675,7 @@ elif section == "Management Dashboard":
             st.error(f"Error displaying records: {e}")
             st.info("Please contact system administrator if this error persists.")
             
+        # Additional Management Tools
         st.header("🔧 Management Tools")
         
         col1, col2, col3 = st.columns(3)
@@ -583,6 +683,7 @@ elif section == "Management Dashboard":
         with col1:
             if st.button("📊 Export Data", use_container_width=True):
                 if data:
+                    # Create DataFrame for export
                     export_df = pd.DataFrame(data)
                     csv = export_df.to_csv(index=False)
                     st.download_button(
@@ -596,18 +697,20 @@ elif section == "Management Dashboard":
         
         with col2:
             if st.button("🔄 Refresh Data", use_container_width=True):
-                st.rerun()
+                st.experimental_rerun()
         
         with col3:
             if st.button("📈 Generate Report", use_container_width=True):
                 st.info("Advanced reporting features coming soon!")
         
+        # System Statistics
         if data:
             st.header("📊 System Statistics")
             
             col1, col2 = st.columns(2)
             
             with col1:
+                # Category distribution
                 categories = [d.get('Category', 'Unknown') for d in data]
                 category_counts = pd.Series(categories).value_counts()
                 st.write("**Items by Category:**")
@@ -615,12 +718,14 @@ elif section == "Management Dashboard":
                     st.write(f"• {category}: {count}")
             
             with col2:
+                # Port distribution
                 ports = [d.get('Port', 'Unknown') for d in data]
                 port_counts = pd.Series(ports).value_counts()
                 st.write("**Items by Port:**")
                 for port, count in port_counts.head(10).items():
                     st.write(f"• {port}: {count}")
         
+        # System Health
         st.header("🔋 System Health")
         col1, col2, col3 = st.columns(3)
         
